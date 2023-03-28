@@ -1,0 +1,135 @@
+diff --git a/lib/dataconnection.ts b/lib/dataconnection.ts
+index a72dfa4..be09fdb 100644
+--- a/lib/dataconnection.ts
++++ b/lib/dataconnection.ts
+@@ -70,7 +70,7 @@ export class DataConnection
+ 			DataConnection.ID_PREFIX + util.randomToken();
+ 
+ 		this.label = this.options.label || this.connectionId;
+-		this.serialization = this.options.serialization || SerializationType.Binary;
++		this.serialization = this.options.serialization || SerializationType.JSON;
+ 		this.reliable = !!this.options.reliable;
+ 
+ 		this._encodingQueue.on("done", (ab: ArrayBuffer) => {
+diff --git a/lib/negotiator.ts b/lib/negotiator.ts
+index eccc419..db7afc7 100644
+--- a/lib/negotiator.ts
++++ b/lib/negotiator.ts
+@@ -142,10 +142,11 @@ export class Negotiator<
+ 		// MEDIACONNECTION.
+ 		logger.log("Listening for remote stream");
+ 
+-		peerConnection.ontrack = (evt) => {
+-			logger.log("Received remote stream");
++		// react-native-webrtc implements the old API.
++		peerConnection.onaddstream = (evt) => {
++		    logger.log("Received remote stream", evt);
+ 
+-			const stream = evt.streams[0];
++			const stream = evt.stream;
+ 			const connection = provider.getConnection(peerId, connectionId);
+ 
+ 			if (connection.type === ConnectionType.Media) {
+@@ -171,7 +172,7 @@ export class Negotiator<
+ 		peerConnection.onicecandidate =
+ 			peerConnection.oniceconnectionstatechange =
+ 			peerConnection.ondatachannel =
+-			peerConnection.ontrack =
++			peerConnection.onaddstream =
+ 				() => {};
+ 
+ 		const peerConnectionNotClosed = peerConnection.signalingState !== "closed";
+@@ -358,15 +359,14 @@ export class Negotiator<
+ 	): void {
+ 		logger.log(`add tracks from stream ${stream.id} to peer connection`);
+ 
+-		if (!peerConnection.addTrack) {
++		// react-native-webrtc implements the old API.
++		if (!peerConnection.addStream) {
+ 			return logger.error(
+-				`Your browser does't support RTCPeerConnection#addTrack. Ignored.`,
++				`Your browser does't support RTCPeerConnection#addStream. Ignored.`
+ 			);
+ 		}
+ 
+-		stream.getTracks().forEach((track) => {
+-			peerConnection.addTrack(track, stream);
+-		});
++		peerConnection.addStream(stream);
+ 	}
+ 
+ 	private _addStreamToMediaConnection(
+diff --git a/lib/peer.ts b/lib/peer.ts
+index 37771bb..915bdc8 100644
+--- a/lib/peer.ts
++++ b/lib/peer.ts
+@@ -172,11 +172,6 @@ export class Peer extends EventEmitter<PeerEvents> {
+ 		};
+ 		this._options = options;
+ 
+-		// Detect relative URL host.
+-		if (this._options.host === "/") {
+-			this._options.host = window.location.hostname;
+-		}
+-
+ 		// Set path correctly.
+ 		if (this._options.path) {
+ 			if (this._options.path[0] !== "/") {
+diff --git a/lib/supports.ts b/lib/supports.ts
+index 902b61a..4e76432 100644
+--- a/lib/supports.ts
++++ b/lib/supports.ts
+@@ -1,9 +1,3 @@
+-import webRTCAdapter_import from "webrtc-adapter";
+-
+-const webRTCAdapter: typeof webRTCAdapter_import =
+-	//@ts-ignore
+-	webRTCAdapter_import.default || webRTCAdapter_import;
+-
+ export const Supports = new (class {
+ 	readonly isIOS = ["iPad", "iPhone", "iPod"].includes(navigator.platform);
+ 	readonly supportedBrowsers = ["firefox", "chrome", "safari"];
+@@ -33,40 +27,15 @@ export const Supports = new (class {
+ 	}
+ 
+ 	getBrowser(): string {
+-		return webRTCAdapter.browserDetails.browser;
++		return 'chrome';
+ 	}
+ 
+ 	getVersion(): number {
+-		return webRTCAdapter.browserDetails.version || 0;
++		return this.minChromeVersion;
+ 	}
+ 
+ 	isUnifiedPlanSupported(): boolean {
+-		const browser = this.getBrowser();
+-		const version = webRTCAdapter.browserDetails.version || 0;
+-
+-		if (browser === "chrome" && version < this.minChromeVersion) return false;
+-		if (browser === "firefox" && version >= this.minFirefoxVersion) return true;
+-		if (
+-			!window.RTCRtpTransceiver ||
+-			!("currentDirection" in RTCRtpTransceiver.prototype)
+-		)
+-			return false;
+-
+-		let tempPc: RTCPeerConnection;
+-		let supported = false;
+-
+-		try {
+-			tempPc = new RTCPeerConnection();
+-			tempPc.addTransceiver("audio");
+-			supported = true;
+-		} catch (e) {
+-		} finally {
+-			if (tempPc) {
+-				tempPc.close();
+-			}
+-		}
+-
+-		return supported;
++		return false;
+ 	}
+ 
+ 	toString(): string {

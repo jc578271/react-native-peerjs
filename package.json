@@ -1,0 +1,23 @@
+{
+  "name": "@thyreality-inc/react-native-peerjs",
+  "version": "1.5.1",
+  "description": "react-native-webrtc + peerjs",
+  "keywords": [
+    "webrtc",
+    "react native",
+    "peerjs"
+  ],
+  "repository": "https://github.com/ThyReality-Inc/react-native-peerjs",
+  "author": "Thyreality Inc.",
+  "license": "MIT",
+  "scripts": {},
+  "main": "dist/react-native-peerjs.js",
+  "devDependencies": {
+    "peerjs": "1.4.8",
+    "parcel": "1.12.3"
+  },
+  "resolutions": {
+    "@babel/preset-env": "7.13.8"
+  },
+  "types": "index.d.ts"
+}
