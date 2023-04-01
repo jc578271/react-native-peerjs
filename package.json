@@ -1,6 +1,6 @@
 {
   "name": "@thyreality-inc/react-native-peerjs",
-  "version": "1.5.1",
+  "version": "1.4.7",
   "description": "react-native-webrtc + peerjs",
   "keywords": [
     "webrtc",
